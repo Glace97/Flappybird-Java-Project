@@ -22,15 +22,15 @@ import java.util.Iterator;
 public class GameScreen extends MainMenuScreen {
     final Flappy game;
 
-    Texture dropImage;
-    Texture bucketImage;
-    Sound dropSound;
-    Music rainMusic;
+    Texture birdImage;
+    Texture backgroundImage;
+   // Sound flapSound;
+    //Sound dropSound;
     OrthographicCamera camera;
-    Rectangle bucket;
-    Array<Rectangle> raindrops;
+    Rectangle bird;
+    Array<Rectangle> pipes;
     long lastDropTime;
-    int dropsGathered;
+    int pipesPassed;
 
 
     //konstruktor
@@ -38,33 +38,32 @@ public class GameScreen extends MainMenuScreen {
         super(game);
         this.game = game;
 
-        // load the images for the droplet and the bucket, 64x64 pixels each
-        dropImage = new Texture(Gdx.files.internal("droplet.png"));
-        bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+        // load the images for the droplet and the bird, 64x64 pixels each
+        backgroundImage = new Texture(Gdx.files.internal("backgroundImage.png"));
+        birdImage = new Texture(Gdx.files.internal("bird.png"));
 
         // load the drop sound effect and the rain background "music"
-        dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
-        rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
-        rainMusic.setLooping(true);
+      //  flapSound = Gdx.audio.newSound(Gdx.files.internal("flapSound.wav"));
 
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
 
-        // create a Rectangle to logically represent the bucket
-        bucket = new Rectangle();
-        bucket.x = 800 / 2 - 64 / 2; // center the bucket horizontally
-        bucket.y = 20; // bottom left corner of the bucket is 20 pixels above
+        // create a Rectangle to logically represent the bird
+
+        bird = new Rectangle();
+        bird.x = 800 / 4 - 32 / 2; // center the bird horizontally
+        bird.y = 480/2; // bottom left corner of the bird is 20 pixels above
         // the bottom screen edge
-        bucket.width = 64;
-        bucket.height = 64;
+        bird.width = 64;
+        bird.height = 50;
 
         // create the raindrops array and spawn the first raindrop
-        raindrops = new Array<Rectangle>();
-        spawnRaindrop();
+     //   pipes = new Array<Rectangle>();
+        //spawnRaindrop();
     }
 
-
+/*
     private void spawnRaindrop() {
         Rectangle raindrop = new Rectangle();
         raindrop.x = MathUtils.random(0, 800-64);
@@ -75,14 +74,14 @@ public class GameScreen extends MainMenuScreen {
         lastDropTime = TimeUtils.nanoTime();
     }
 
-
+*/
     public void render(float delta) {
         // clear the screen with a dark blue color. The
         // arguments to glClearColor are the red, green
         // blue and alpha component in the range [0,1]
         // of the color to be used to clear the screen.
-        Gdx.gl.glClearColor(0, 0, 0.2f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    //   Gdx.gl.glClearColor(0, 0, 0.2f, 1);
+      //  Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         //update matrix
         camera.update();
@@ -91,14 +90,16 @@ public class GameScreen extends MainMenuScreen {
         // coordinate system specified by the camera.
         game.batch.setProjectionMatrix(camera.combined);
 
-        // begin a new batch and draw the bucket and
+        // begin a new batch and draw the bird and
         // all drops
         game.batch.begin();
-        game.font.draw(game.batch, "Drops Collected: " + dropsGathered, 0, 480);
-        game.batch.draw(bucketImage, bucket.x, bucket.y, bucket.width, bucket.height);
-        for (Rectangle raindrop : raindrops) {
+
+        game.font.draw(game.batch, "Pipes passed: " + pipesPassed, 0, 480);
+        game.batch.draw(backgroundImage, 0, 0, 800, 480);
+        game.batch.draw(birdImage, bird.x, bird.y, bird.width, bird.height);
+       /* for (Rectangle raindrop : raindrops) {
             game.batch.draw(dropImage, raindrop.x, raindrop.y);
-        }
+        }*/
         game.batch.end();
 
         // process user input
@@ -106,43 +107,46 @@ public class GameScreen extends MainMenuScreen {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
-            bucket.x = touchPos.x - 64 / 2;
+            bird.x = touchPos.x - 64 / 2;
         }
         if (Gdx.input.isKeyPressed(Keys.LEFT))
-            bucket.x -= 200 * Gdx.graphics.getDeltaTime();
+            bird.x -= 200 * Gdx.graphics.getDeltaTime();
         if (Gdx.input.isKeyPressed(Keys.RIGHT))
-            bucket.x += 200 * Gdx.graphics.getDeltaTime();
+            bird.x += 200 * Gdx.graphics.getDeltaTime();
 
-        // make sure the bucket stays within the screen bounds
-        if (bucket.x < 0)
-            bucket.x = 0;
-        if (bucket.x > 800 - 64)
-            bucket.x = 800 - 64;
-
+        // make sure the bird stays within the screen bounds
+        if (bird.x < 0)
+            bird.x = 0;
+        if (bird.x > 800 - 64)
+            bird.x = 800 - 64;
+/*
         // check if we need to create a new raindrop
         if (TimeUtils.nanoTime() - lastDropTime > 1000000000)
             spawnRaindrop();
-
+*/
         // move the raindrops, remove any that are beneath the bottom edge of
-        // the screen or that hit the bucket. In the later case we increase the
+        // the screen or that hit the bird. In the later case we increase the
         // value our drops counter and add a sound effect.
+
+        /*
         Iterator<Rectangle> iter = raindrops.iterator();
         while (iter.hasNext()) {
             Rectangle raindrop = iter.next();
             raindrop.y -= 200 * Gdx.graphics.getDeltaTime();
             if (raindrop.y + 64 < 0)
                 iter.remove();
-            if (raindrop.overlaps(bucket)) {
+            if (raindrop.overlaps(bird)) {
                 dropsGathered++;
                 dropSound.play();
                 iter.remove();
             }
         }
+
+         */
     }
 
     @Override
     public void show(){
-        rainMusic.play();
     }
 
     @Override
@@ -157,10 +161,7 @@ public class GameScreen extends MainMenuScreen {
 
     @Override
     public void dispose() {
-        dropImage.dispose();
-        bucketImage.dispose();
-        dropSound.dispose();
-        rainMusic.dispose();
+        birdImage.dispose();
     }
 
 
