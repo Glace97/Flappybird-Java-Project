@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 
-//Game är en abstract klass, kan inte intantieras
+//Game är en abstract klass, kan inte instansieras
 public class Flappy extends Game {
     public SpriteBatch batch;
     public BitmapFont font;
