@@ -24,15 +24,22 @@ public class GameScreen extends MainMenuScreen {
 
     Texture birdImage;
     Texture backgroundImage;
-    Texture pipeImage;
-   // Sound flapSound;
+    Texture lowerPipeImage;
+    Texture upperPipeImage;
+
+    Array<Rectangle> upperPipes;
+    Array<Rectangle> lowerPipes;
+    Array<Rectangle> birds;
+
+    // Sound flapSound;
     //Sound dropSound;
     OrthographicCamera camera;
-    Array<Rectangle> birds;
-    Array<Rectangle> pipes;
-    Rectangle pipe;  //TEST
-    long lastDropTime;
-    int pipesPassed;
+
+    //increases with timePassed. Start value 2 pixels per frame
+    private int speedPipes = 2;
+    private int generatePipesLimit = 400; //när pipens x posistion lämnar p avstånd till höger, generera ny pipe
+    private long timePassed;
+
     final int BIRD_DROPPING = 5;
     final int BIRD_RISING = 10;
 
@@ -45,7 +52,10 @@ public class GameScreen extends MainMenuScreen {
         // load the images for the droplet and the bird, 64x64 pixels each
         backgroundImage = new Texture(Gdx.files.internal("backgroundImage.png"));
         birdImage = new Texture(Gdx.files.internal("bird.png"));
-        pipeImage = new Texture(Gdx.files.internal("pipe.png"));
+        //pipeImage = new Texture(Gdx.files.internal("pipe.png")); OLD
+        lowerPipeImage = new Texture(Gdx.files.internal("lower_pipe.png"));
+        upperPipeImage = new Texture(Gdx.files.internal("upper_pipe.png"));
+
 
         // load the drop sound effect and the rain background "music"
        //  flapSound = Gdx.audio.newSound(Gdx.files.internal("flapSound.wav"));
@@ -58,18 +68,10 @@ public class GameScreen extends MainMenuScreen {
         birds = new Array<Rectangle>();
         spawnBird();
 
-        //TEST
-        pipe = new Rectangle();
-        pipe.x = 600;
-        pipe.y = 480;
-        pipe.width = 64;
-        pipe.height = 1000;
-
-        // create the raindrops array and spawn the first raindrop
-      /*  pipes = new Array<Rectangle>();
+        upperPipes = new Array<Rectangle>();
+        lowerPipes = new Array<Rectangle>();
         spawnPipes();
 
-       */
     }
 
     private void spawnBird(){
@@ -81,49 +83,67 @@ public class GameScreen extends MainMenuScreen {
         bird.height = 50;
         birds.add(bird);
     }
-/*
-    private void spawnPipes(){
-        Rectangle pipe = new Rectangle();
 
-        pipe.height = 800*2;
-        pipes.add(pipe);
-    }
-*/
-/*
-    private void spawnRaindrop() {
-        Rectangle raindrop = new Rectangle();
-        raindrop.x = MathUtils.random(0, 800-64);
-        raindrop.y = 480;
-        raindrop.width = 64;
-        raindrop.height = 64;
-        raindrops.add(raindrop);
-        lastDropTime = TimeUtils.nanoTime();
+    private void spawnPipes() {
+        Rectangle lowerPipe = new Rectangle();
+        Rectangle upperPipe = new Rectangle();
+        Rectangle nrOfPipes = new Rectangle();
+
+        //leaving room for bird to pass, 64 pixels
+        lowerPipe.height = lowerPipe.height = MathUtils.random(0, ( (480/2) - (64/2) ));
+        upperPipe.height = MathUtils.random(0, ( (480/2) - (64/2) ));
+
+        lowerPipe.width = 64;
+        upperPipe.width = 64;
+
+        //spawn pipes at right side of screen
+        lowerPipe.x = 800;
+        upperPipe.x = 800;
+
+        lowerPipe.y = 0;
+        upperPipe.y = 480 - upperPipe.height;
+
+        //keep hole reasonably small, autmatically set to smallest if too big gap
+        /* CODE HERE*/
+
+        lowerPipes.add(lowerPipe);
+        upperPipes.add(upperPipe);
+
+        //increase time, will be changed according to difficulty
+        timePassed = TimeUtils.nanoTime();
     }
 
-*/
+
+
     public void render(float delta) {
-        // clear the screen with a dark blue color. The
-        // arguments to glClearColor are the red, green
-        // blue and alpha component in the range [0,1]
-        // of the color to be used to clear the screen.
-    //   Gdx.gl.glClearColor(0, 0, 0.2f, 1);
-      //  Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         //update matrix
         camera.update();
 
         // tell the SpriteBatch to render in the
         // coordinate system specified by the camera.
         game.batch.setProjectionMatrix(camera.combined);
-
-        // begin a new batch and draw the bird and
-        // all drops
         game.batch.begin();
 
-        game.font.draw(game.batch, "Pipes passed: " + pipesPassed, 0, 480);
+
         game.batch.draw(backgroundImage, 0, 0, 800, 480);
-        game.batch.draw(pipeImage, pipe.x, pipe.y, pipe.width, pipe.height);
-        for(Rectangle bird : birds){
+      //  game.font.draw(game.batch, "Pipes passed: " + pipesPassed, 0, 480);
+
+
+        //move lowerpipe
+        for(Rectangle lowerPipe : lowerPipes) {
+            game.batch.draw(lowerPipeImage, lowerPipe.x, lowerPipe.y, lowerPipe.width, lowerPipe.height);
+            lowerPipe.x -= speedPipes;
+        }
+
+        //move upperpipe
+        for(Rectangle upperPipe : upperPipes) {
+            game.batch.draw(upperPipeImage, upperPipe.x, upperPipe.y, upperPipe.width, upperPipe.height);
+            upperPipe.x -= speedPipes;
+        }
+
+
+        //move bird
+        for(Rectangle bird : birds) {
             game.batch.draw(birdImage, bird.x, bird.y, bird.width, bird.height);
             bird.y -= BIRD_DROPPING;
             if(bird.y < 0) {
@@ -136,33 +156,17 @@ public class GameScreen extends MainMenuScreen {
                 bird.y += BIRD_RISING;
             }
         }
-        /*
-        for(Rectangle pipe : pipes) {
-            game.batch.draw(pipeImage, pipe.x, pipe.y, pipe.width, pipe.height);
-        }
-        */
         game.batch.end();
     }
 
-        /*
-         KOLLA OM DENNA RAD SKA TAS BORT
-         for (Rectangle raindrop : raindrops) {
-            game.batch.draw(dropImage, raindrop.x, raindrop.y);
-        }*/
+    //check if need to spawn new set of pipes
 
+   /*
 
-        // process user input
-
-
-/*
         // check if we need to create a new raindrop
         if (TimeUtils.nanoTime() - lastDropTime > 1000000000)
             spawnRaindrop();
 */
-        // move the raindrops, remove any that are beneath the bottom edge of
-        // the screen or that hit the bird. In the later case we increase the
-        // value our drops counter and add a sound effect.
-
 
 
     @Override
