@@ -1,18 +1,9 @@
 package com.mygdx.game.desktop;
 
-import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
@@ -29,7 +20,8 @@ public class GameScreen extends MainMenuScreen {
 
     Array<Rectangle> upperPipes;
     Array<Rectangle> lowerPipes;
-    Array<Rectangle> birds;
+    // Rectangle bird;
+    Circle bird;
 
     // Sound flapSound;
     //Sound dropSound;
@@ -37,8 +29,13 @@ public class GameScreen extends MainMenuScreen {
 
     //increases with timePassed. Start value 2 pixels per frame
     private int speedPipes = 2;
-    private int generatePipesLimit = 400; //när pipens x posistion lämnar p avstånd till höger, generera ny pipe
-    private long timePassed;
+    //lowest difficulty is 2 ms
+    private int spawnDifficultyLimit = 2000;
+    long lastSpawnedPipes;
+    private int scaleBird = 20; //shrinking rectangle for accurate collision
+
+    //scaling image of pipes for collision
+    private int scalePipeHeight = 60;
 
     final int BIRD_DROPPING = 5;
     final int BIRD_RISING = 10;
@@ -58,14 +55,14 @@ public class GameScreen extends MainMenuScreen {
 
 
         // load the drop sound effect and the rain background "music"
-       //  flapSound = Gdx.audio.newSound(Gdx.files.internal("flapSound.wav"));
+        //  flapSound = Gdx.audio.newSound(Gdx.files.internal("flapSound.wav"));
 
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
 
         //create first image of bird and spawn
-        birds = new Array<Rectangle>();
+        //birds = new Array<Rectangle>();
         spawnBird();
 
         upperPipes = new Array<Rectangle>();
@@ -74,24 +71,24 @@ public class GameScreen extends MainMenuScreen {
 
     }
 
-    private void spawnBird(){
-        Rectangle bird = new Rectangle();
+    private void spawnBird() {
+        Circle bird = new Circle();
         bird.x = 800 / 4 - 32 / 2; // center the bird horizontally
-        bird.y = 480/2; // bottom left corner of the bird is 20 pixels above
+        bird.y = 480 / 2; // bottom left corner of the bird is 20 pixels above
         // the bottom screen edge
-        bird.width = 64;
-        bird.height = 50;
-        birds.add(bird);
+        bird.radius = 40;
+        //bird.width = 64- scaleBird;
+        //bird.height = 50 - scaleBird;
+        this.bird = bird;
     }
 
     private void spawnPipes() {
         Rectangle lowerPipe = new Rectangle();
         Rectangle upperPipe = new Rectangle();
-        Rectangle nrOfPipes = new Rectangle();
 
         //leaving room for bird to pass, 64 pixels
-        lowerPipe.height = lowerPipe.height = MathUtils.random(0, ( (480/2) - (64/2) ));
-        upperPipe.height = MathUtils.random(0, ( (480/2) - (64/2) ));
+        lowerPipe.height = MathUtils.random(0, ((480 / 2) - (64 / 2)));
+        upperPipe.height = MathUtils.random(0, ((480 / 2) - (64 / 2)));
 
         lowerPipe.width = 64;
         upperPipe.width = 64;
@@ -110,9 +107,8 @@ public class GameScreen extends MainMenuScreen {
         upperPipes.add(upperPipe);
 
         //increase time, will be changed according to difficulty
-        timePassed = TimeUtils.nanoTime();
+        lastSpawnedPipes = TimeUtils.millis();
     }
-
 
 
     public void render(float delta) {
@@ -126,51 +122,71 @@ public class GameScreen extends MainMenuScreen {
 
 
         game.batch.draw(backgroundImage, 0, 0, 800, 480);
-      //  game.font.draw(game.batch, "Pipes passed: " + pipesPassed, 0, 480);
+        //  game.font.draw(game.batch, "Pipes passed: " + pipesPassed, 0, 480);
 
 
         //move lowerpipe
-        for(Rectangle lowerPipe : lowerPipes) {
-            game.batch.draw(lowerPipeImage, lowerPipe.x, lowerPipe.y, lowerPipe.width, lowerPipe.height);
+        for (Rectangle lowerPipe : lowerPipes) {
+            game.batch.draw(lowerPipeImage, lowerPipe.x, lowerPipe.y, lowerPipe.width, lowerPipe.height + scalePipeHeight);
             lowerPipe.x -= speedPipes;
         }
 
         //move upperpipe
-        for(Rectangle upperPipe : upperPipes) {
-            game.batch.draw(upperPipeImage, upperPipe.x, upperPipe.y, upperPipe.width, upperPipe.height);
+        for (Rectangle upperPipe : upperPipes) {
+            game.batch.draw(upperPipeImage, upperPipe.x, upperPipe.y, upperPipe.width, upperPipe.height + scalePipeHeight);
             upperPipe.x -= speedPipes;
         }
 
+        //scaleBird is scaling image of bird, circle obj stays the same
+        game.batch.draw(birdImage, bird.x, bird.y, (bird.radius * 2) - scaleBird, (bird.radius * 2) - scaleBird);
+        bird.y -= BIRD_DROPPING;
+
+        //bird stays within frame
+        if (bird.y < 0) {
+            bird.y = 0;
+        }
+
+        if (bird.y > (480 - (bird.radius * 2))) {
+            bird.y = (480 - (bird.radius * 2));
+        }
 
         //move bird
-        for(Rectangle bird : birds) {
-            game.batch.draw(birdImage, bird.x, bird.y, bird.width, bird.height);
-            bird.y -= BIRD_DROPPING;
-            if(bird.y < 0) {
-                bird.y = 0;
-            }
-            if (Gdx.input.isTouched()) {
-                Vector3 touchPos = new Vector3();
-                touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-                camera.unproject(touchPos);
-                bird.y += BIRD_RISING;
-            }
+        if (Gdx.input.isTouched()) {
+            bird.y += BIRD_RISING;
         }
-        game.batch.end();
+
+
+        //check if new pipes needs to be generated
+        if (TimeUtils.millis() - lastSpawnedPipes > spawnDifficultyLimit) {
+            spawnPipes();
+        }
+
+
+        Iterator<Rectangle> iterator = lowerPipes.iterator();
+        {
+            while (iterator.hasNext()) {
+                Rectangle lowerPipe = iterator.next();
+                if (Intersector.overlaps(bird, lowerPipe)) {
+                 /*   try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }*/
+                    game.batch.draw(backgroundImage, 0, 0, 800, 480);
+                    game.font.draw(game.batch, "GAME OVER", 100, 150);
+                }
+
+            }
+            game.batch.end();
+        }
+
     }
 
-    //check if need to spawn new set of pipes
 
-   /*
-
-        // check if we need to create a new raindrop
-        if (TimeUtils.nanoTime() - lastDropTime > 1000000000)
-            spawnRaindrop();
-*/
 
 
     @Override
-    public void show(){
+    public void show() {
     }
 
     @Override
